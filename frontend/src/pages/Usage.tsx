@@ -354,6 +354,19 @@ export default function Usage() {
                                 {log.reasoning_effort}
                               </Badge>
                             )}
+                            {log.service_tier === 'fast' && (
+                              <Badge
+                                variant="outline"
+                                className="text-[11px] font-bold"
+                                style={{
+                                  background: 'rgba(59, 130, 246, 0.12)',
+                                  color: '#3b82f6',
+                                  borderColor: 'transparent',
+                                }}
+                              >
+                                ⚡ Fast
+                              </Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-[14px] text-muted-foreground">

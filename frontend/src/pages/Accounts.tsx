@@ -630,8 +630,7 @@ export default function Accounts() {
                         <TableCell className="text-[14px] font-mono text-muted-foreground">{account.id}</TableCell>
                         <TableCell className="text-[14px] text-muted-foreground">{account.email || '-'}</TableCell>
                         <TableCell
-                          className="text-[18px] font-medium"
-                          style={{ fontFamily: 'var(--font-geist-mono)' }}
+                          className="text-[13px] font-medium"
                         >
                           {account.plan_type || '-'}
                         </TableCell>
@@ -655,7 +654,7 @@ export default function Accounts() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <UsageCell account={account} t={t} />
+                          <UsageCell account={account} />
                         </TableCell>
                         <TableCell className="text-[13px] text-muted-foreground whitespace-nowrap">{formatBeijingTime(account.created_at)}</TableCell>
                         <TableCell className="text-[14px] text-muted-foreground">{formatRelativeTime(account.updated_at)}</TableCell>
@@ -1286,18 +1285,13 @@ function TestConnectionModal({
   )
 }
 
-// 格式化重置倒计时
-function formatResetTime(resetAt: string | undefined): string | null {
+// 格式化重置时间为具体时间
+function formatResetAt(resetAt: string | undefined): string | null {
   if (!resetAt) return null
-  const diff = new Date(resetAt).getTime() - Date.now()
-  if (diff <= 0) return null
-  const h = Math.floor(diff / 3_600_000)
-  const m = Math.floor((diff % 3_600_000) / 60_000)
-  if (h > 24) {
-    const d = Math.floor(h / 24)
-    return `${d}d${h % 24}h`
-  }
-  return h > 0 ? `${h}h${m}m` : `${m}m`
+  const d = new Date(resetAt)
+  if (d.getTime() <= Date.now()) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 // 用量进度条颜色
@@ -1308,52 +1302,51 @@ function usageBarColor(pct: number): string {
 }
 
 // 单行用量进度条
-function UsageBar({ label, pct, resetAt, t }: { label: string; pct: number; resetAt?: string; t: (k: string, o?: Record<string, string>) => string }) {
-  const resetText = formatResetTime(resetAt)
+function UsageBar({ label, pct, resetAt }: { label: string; pct: number; resetAt?: string }) {
+  const resetText = formatResetAt(resetAt)
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px] text-muted-foreground w-5 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-[48px]">
-        <div className={`h-full rounded-full transition-all ${usageBarColor(pct)}`} style={{ width: `${Math.min(100, pct)}%` }} />
+    <div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-medium text-muted-foreground w-5 shrink-0">{label}</span>
+        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-[72px]">
+          <div className={`h-full rounded-full transition-all ${usageBarColor(pct)}`} style={{ width: `${Math.min(100, pct)}%` }} />
+        </div>
+        <span className="text-[12px] font-semibold w-[42px] text-right shrink-0">{pct.toFixed(1)}%</span>
       </div>
-      <span className="text-[11px] font-medium w-[38px] text-right shrink-0">{pct.toFixed(1)}%</span>
-      {resetText && <span className="text-[9px] text-muted-foreground whitespace-nowrap">{t('accounts.resetIn', { time: resetText })}</span>}
+      {resetText && <div className="text-[11px] font-medium text-muted-foreground mt-0.5 pl-[26px]">⏱ {resetText}</div>}
     </div>
   )
 }
 
 // 用量列组件
-function UsageCell({ account, t }: { account: AccountRow; t: (k: string, o?: Record<string, string>) => string }) {
+function UsageCell({ account }: { account: AccountRow }) {
   const plan = (account.plan_type || '').toLowerCase()
   const has7d = account.usage_percent_7d !== null && account.usage_percent_7d !== undefined
   const has5h = account.usage_percent_5h !== null && account.usage_percent_5h !== undefined
 
   if (plan === 'free') {
-    // Free: 只显示 7d
-    if (!has7d) return <span className="text-[12px] text-muted-foreground">{t('accounts.notCollected')}</span>
+    if (!has7d) return <span className="text-[12px] text-muted-foreground">-</span>
     return (
-      <div className="w-32">
-        <UsageBar label={t('accounts.usage7d')} pct={account.usage_percent_7d!} resetAt={account.reset_7d_at} t={t} />
+      <div className="w-40">
+        <UsageBar label="7d" pct={account.usage_percent_7d!} resetAt={account.reset_7d_at} />
       </div>
     )
   }
 
   if (plan === 'pro' || plan === 'team') {
-    // Pro/Team: 显示 5h + 7d
-    if (!has5h && !has7d) return <span className="text-[12px] text-muted-foreground">{t('accounts.notCollected')}</span>
+    if (!has5h && !has7d) return <span className="text-[12px] text-muted-foreground">-</span>
     return (
-      <div className="w-44 space-y-1">
-        {has5h && <UsageBar label={t('accounts.usage5h')} pct={account.usage_percent_5h!} resetAt={account.reset_5h_at} t={t} />}
-        {has7d && <UsageBar label={t('accounts.usage7d')} pct={account.usage_percent_7d!} resetAt={account.reset_7d_at} t={t} />}
+      <div className="w-48 space-y-1.5">
+        {has5h && <UsageBar label="5h" pct={account.usage_percent_5h!} resetAt={account.reset_5h_at} />}
+        {has7d && <UsageBar label="7d" pct={account.usage_percent_7d!} resetAt={account.reset_7d_at} />}
       </div>
     )
   }
 
-  // 其他套餐：只显示已有数据
   if (has7d) {
     return (
-      <div className="w-32">
-        <UsageBar label={t('accounts.usage7d')} pct={account.usage_percent_7d!} resetAt={account.reset_7d_at} t={t} />
+      <div className="w-40">
+        <UsageBar label="7d" pct={account.usage_percent_7d!} resetAt={account.reset_7d_at} />
       </div>
     )
   }

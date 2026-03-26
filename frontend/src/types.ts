@@ -194,6 +194,7 @@ export interface UsageLog {
   upstream_endpoint: string
   stream: boolean
   cached_tokens: number
+  service_tier: string
   account_email: string
   created_at: ISODateString
 }
