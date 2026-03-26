@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Plus, RefreshCw, Trash2, Zap, FlaskConical, Ban, Timer, Upload, KeyRound, ExternalLink, FileText, FileJson, BarChart3 } from 'lucide-react'
+import { Plus, RefreshCw, Trash2, Zap, FlaskConical, Ban, Timer, Upload, KeyRound, ExternalLink, FileText, FileJson, BarChart3, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import AccountUsageModal from '../components/AccountUsageModal'
 
@@ -33,6 +33,7 @@ export default function Accounts() {
   const [showAdd, setShowAdd] = useState(false)
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<'all' | 'normal' | 'rate_limited' | 'banned'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sortKey, setSortKey] = useState<'requests' | 'usage' | 'importTime' | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
@@ -101,16 +102,26 @@ export default function Accounts() {
   const riskyAccounts = accounts.filter((account) => account.health_tier === 'risky').length
 
   const filteredAccounts = accounts.filter((account) => {
+    // 状态过滤
     switch (statusFilter) {
       case 'normal':
-        return account.status === 'active' || account.status === 'ready'
+        if (account.status !== 'active' && account.status !== 'ready') return false
+        break
       case 'rate_limited':
-        return account.status === 'rate_limited'
+        if (account.status !== 'rate_limited') return false
+        break
       case 'banned':
-        return account.status === 'unauthorized'
-      default:
-        return true
+        if (account.status !== 'unauthorized') return false
+        break
     }
+    // 搜索过滤
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      const email = (account.email || '').toLowerCase()
+      const name = (account.name || '').toLowerCase()
+      if (!email.includes(q) && !name.includes(q)) return false
+    }
+    return true
   })
 
   const sortedAccounts = [...filteredAccounts].sort((a, b) => {
@@ -508,6 +519,16 @@ export default function Accounts() {
           <SchedulerChip label={t('status.unauthorized')} value={bannedAccounts} tone="neutral" />
         </div>
 
+        <div className="mb-4 relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+          <Input
+            className="pl-10 h-9 rounded-xl"
+            placeholder={t('accounts.searchPlaceholder')}
+            value={searchQuery}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => { setSearchQuery(e.target.value); setPage(1) }}
+          />
+        </div>
+
         {selected.size > 0 && (
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 mb-4 rounded-2xl bg-primary/10 border border-primary/20 text-sm font-semibold text-primary">
             <span>{t('common.selected', { count: selected.size })}</span>
@@ -642,7 +663,7 @@ export default function Accounts() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="size-7"
+                              className="h-7 w-8 px-0"
                               onClick={() => setUsageAccount(account)}
                               title={t('accounts.usageDetail')}
                             >
@@ -651,7 +672,7 @@ export default function Accounts() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="size-7"
+                              className="h-7 w-8 px-0"
                               onClick={() => setTestingAccount(account)}
                               title={t('accounts.testConnection')}
                             >
@@ -660,7 +681,7 @@ export default function Accounts() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="size-7"
+                              className="h-7 w-8 px-0"
                               disabled={refreshingIds.has(account.id)}
                               onClick={() => void handleRefresh(account)}
                               title={t('accounts.refreshAccessToken')}
@@ -670,7 +691,7 @@ export default function Accounts() {
                             <Button
                               variant="destructive"
                               size="icon"
-                              className="size-7"
+                              className="h-7 w-8 px-0"
                               onClick={() => void handleDelete(account)}
                               title={t('accounts.deleteAccount')}
                             >

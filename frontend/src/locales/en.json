@@ -170,6 +170,7 @@
     "cachedTokens": "Cached Tokens",
     "modelDistribution": "Model Distribution",
     "noUsageData": "No usage data yet",
+    "searchPlaceholder": "Search email or name…",
     "cancelSelection": "Clear Selection",
     "confirmDelete": "Are you sure you want to delete this account?",
     "confirmBatchDelete": "Are you sure you want to delete {{count}} selected accounts? This action cannot be undone.",
